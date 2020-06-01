@@ -18,11 +18,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
-      with:
-        node-version: ${{ matrix.node-version }}
-    - run: npm ci
+    #- name: Use Node.js ${{ matrix.node-version }}
+      #uses: actions/setup-node@v1
+      #with:
+        #node-version: ${{ matrix.node-version }}
+    #- run: npm ci
     #- run: npm build --if-present
     - name: Extract branch name
       shell: bash
@@ -35,9 +35,9 @@ jobs:
       run: |
         echo ::set-output name=repo::$(echo ${GITHUB_REPOSITORY})
         echo ::set-output name=sha_short::$(git rev-parse --short HEAD)
-        echo ::set-output name=image-name::$(echo quay.io/neinnovation/rate-issue-api})
+        echo ::set-output name=image-name::$(echo quay.io/neinnovation/rate_issue-api})
         echo ::set-output name=branch::${GITHUB_REF#refs/heads/}
-        echo ::set-output name=docker_repo::$(echo /neinnovation/rate-issue-api) 
+        echo ::set-output name=docker_repo::$(echo /neinnovation/rate_issue-api) 
     - name: Login to Podman
       id: login
       run:  |
@@ -46,10 +46,10 @@ jobs:
          podman login quay.io -u ${{ secrets.docker_username }} -p ${{ secrets.docker_password }}
     - name: Build Image using Podman
       run: |
-         podman build . -t quay.io/neinnovation/rate-issue-api:${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.sha_short }}
+         podman build . -t quay.io/neinnovationorg/rate_issue-api:${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.sha_short }}
     - name: Push Image to Github Registry
       run: |
-          podman push quay.io/neinnovation/rate-issue-api:${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.sha_short }}
+          podman push quay.io/neinnovationorg/rate_issue-api:${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.sha_short }}
     - name: OpenShift Action
       uses: redhat-developer/openshift-actions@v2.0
       with:
@@ -61,16 +61,15 @@ jobs:
         cmd: |
           'version'
           'project development'
-          'delete all --selector app=rate-issue-api'
+          'delete all --selector app=rate_issue-api'
           'status'
-          'tag --source=docker quay.io/neinnovation/rate-issue-api:${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.sha_short }} development/rate-issue-api:${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.sha_short }}'
-          'new-app quay.io/neinnovation/rate-issue-api:${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.sha_short }}'
-          'expose services/rate-issue-api'
+          'new-app quay.io/neinnovationorg/rate_issue-api:${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.sha_short }}'
+          'expose services/rate_issue-api'
     - name: Scan Image
       uses: Azure/container-scan@v0
       continue-on-error: true
       with:
-        image-name: quay.io/neinnovation/rate-issue-api:${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.sha_short }}
+        image-name: quay.io/neinnovationorg/rate_issue-api:${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.sha_short }}
         username: ${{ secrets.docker_username }}
         password: ${{ secrets.docker_password }}
         token: ${{ github.token }}
