@@ -60,7 +60,7 @@ jobs:
         # Oc command to be executed
         cmd: |
           'version'
-          'project development'
+          'project dev'
           'delete all --selector app=rate-api'
           'status'
           'new-app quay.io/neinnovationorg/rate-api:${{ steps.extract_branch.outputs.branch }}-${{ steps.extract_branch.outputs.sha_short }}'
