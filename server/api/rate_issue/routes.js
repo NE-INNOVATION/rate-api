@@ -23,18 +23,18 @@ let policyNumGen = rn.generator({
 
 
 router.route('/rate/:id/:quoteId')
-  .get(async (req, res, next) => {
+  .get(async (req, res) => {
     res.send(JSON.stringify(await getCoverageInfo(req.params.id, req.params.quoteId)))
   })
-  .post(async (req, res, next) => {
+  .post(async (req, res) => {
     res.send(JSON.stringify(await saveCoverageInfo(req.body, req.params.quoteId)))
   })
 
 router.route('/issue/:id/:quoteId')
-  .get(async (req, res, next) => {
+  .get(async (req, res) => {
     res.send(JSON.stringify(await getPolicyInfo(req.params.id, req.params.quoteId)))
   })
-  .post(async (req, res, next) => {
+  .post(async (req, res) => {
     res.send(JSON.stringify(await savePolicyInfo(req.body, req.params.quoteId)))
   })
 
