@@ -7,6 +7,8 @@ const { Agent } = require('https')
 const Axios = require('axios')
 const { response } = require('express')
 const e = require('express')
+const OktaJwtVerifier = require('@okta/jwt-verifier')
+const config = require('./authConfiguration.js')
 
 const client = Axios.create({
   httpsAgent: new Agent({
@@ -18,6 +20,33 @@ const healthcheck = new health.HealthChecker()
 
 module.exports = () => {
   
+  const oktaJwtVerifier = new OktaJwtVerifier({
+    clientId: config.server.oidc.clientId,
+    issuer: config.server.oidc.issuer,
+    assertClaims: config.server.assertClaims
+  })
+
+  function authenticationRequired(req, res, next) {
+    const authHeader = req.headers.authorization || '';
+    const match = authHeader.match(/Bearer (.+)/);
+
+    if (!match) {
+      res.status(401);
+      return next('Unauthorized');
+    }
+
+    const accessToken = match[1];
+    const audience = config.server.assertClaims.aud;
+    return oktaJwtVerifier.verifyAccessToken(accessToken, audience)
+      .then((jwt) => {
+        req.jwt = jwt;
+        next();
+      })
+      .catch((err) => {
+        res.status(401).send(err.message);
+      });
+  }
+
   const app = express()
   app.set('json-spaces', 2)
   app.use(bodyParser.json())
@@ -33,7 +62,7 @@ module.exports = () => {
   app.use('/ready', health.ReadinessEndpoint(healthcheck))
   app.use('/health', health.HealthEndpoint(healthcheck))
 
-  app.use('/api/rate_issue/rate/:id/:quoteId', async (req, res, next) => {
+  app.use('/api/rate_issue/rate/:id/:quoteId',authenticationRequired,async (req, res, next) => {
     const quoteId = req.params.quoteId
     const pd = req.body.pd
     const { data } = await client.get(`${process.env.UNDERWRITING_URL}${quoteId}/${pd}`);
@@ -45,7 +74,7 @@ module.exports = () => {
     }
   })
   
-  app.use('/api', route)
+  app.use('/api',authenticationRequired,route)
   dataStore.createDbConnection()
   
   return app; 
