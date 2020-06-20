@@ -33,17 +33,17 @@ module.exports = () => {
   app.use('/ready', health.ReadinessEndpoint(healthcheck))
   app.use('/health', health.HealthEndpoint(healthcheck))
 
-  app.use('/api/rate_issue/rate/:id/:quoteId', async (req, res, next) => {
-    const quoteId = req.params.quoteId
-    const pd = req.body.pd
-    const { data } = await client.get(`${process.env.UNDERWRITING_URL}${quoteId}/${pd}`);
-    console.log(data)
-    if(data.code === 'RATE_SUCCESS' || data.code === 'UWAPPR'){
-      next();
-    }else{
-      res.send(data)
-    }
-  })
+  // app.use('/api/rate_issue/rate/:id/:quoteId', async (req, res, next) => {
+  //   const quoteId = req.params.quoteId
+  //   const pd = req.body.pd
+  //   const { data } = await client.get(`${process.env.UNDERWRITING_URL}${quoteId}/${pd}`);
+  //   console.log(data)
+  //   if(data.code === 'RATE_SUCCESS' || data.code === 'UWAPPR'){
+  //     next();
+  //   }else{
+  //     res.send(data)
+  //   }
+  // })
   
   app.use('/api', route)
   dataStore.createDbConnection()
