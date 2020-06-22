@@ -44,7 +44,7 @@ module.exports = () => {
     const { data } = await client.get(
       `${process.env.UNDERWRITING_URL}${quoteId}/${pd}`
     );
-    if (data.code === "RATE_SUCCESS" || data.code === "UWAPPR") {
+    if (data.status === "RATE_SUCCESS" || data.status === "UWAPPR") {
       next();
     } else {
       res.send(data);
