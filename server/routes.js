@@ -52,7 +52,7 @@ module.exports = () => {
   });
 
   app.use("/api", route);
-  dataStore.createDbConnection();
+  // dataStore.createDbConnection();
 
   return app;
 };

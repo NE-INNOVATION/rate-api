@@ -2,6 +2,8 @@ const express = require("express");
 let rn = require("random-number");
 const router = express.Router({ mergeParams: true });
 const dataStore = require("../../data/dataStore");
+const axios = require("axios");
+const { Agent } = require("https");
 
 let polGen = rn.generator({
   min: 100000000,
@@ -19,6 +21,12 @@ let policyNumGen = rn.generator({
   min: 100000000000,
   max: 999999999000,
   integer: true,
+});
+
+const client = axios.create({
+  httpsAgent: new Agent({
+    rejectUnauthorized: false,
+  }),
 });
 
 router
@@ -55,12 +63,12 @@ let getCoverageInfo = async (id, quoteId) => {
 
 let saveCoverageInfo = async (data, quoteId) => {
   let coverage = "";
-  if (data.id !== "") {
-    coverage = await dataStore.findCoverage(quoteId);
-  } else {
-    coverage = {};
-    coverage.quoteId = quoteId;
-  }
+  // if (data.id) {
+  //   coverage = await dataStore.findCoverage(quoteId);
+  // } else {
+  coverage = {};
+  coverage.quoteId = quoteId;
+  // }
 
   coverage.bi = data.bi;
   coverage.pd = data.pd;
@@ -70,15 +78,25 @@ let saveCoverageInfo = async (data, quoteId) => {
   coverage.rerim = data.rerim;
   coverage.premium = (Math.random() * 1000 + 600).toFixed(2);
 
-  if (data.id === "") {
+  if (!data.id) {
     coverage.id = covGen().toString();
   }
 
-  dataStore.addCoverage(coverage);
+  await client.post(
+    `${process.env.DB_SERVICE_URL}/${process.env.COLLECTION_NAME}`,
+    coverage,
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  // dataStore.addCoverage(coverage);
 
   return {
     id: coverage.id,
-    premium: coverage.premium
+    premium: coverage.premium,
   };
 };
 
