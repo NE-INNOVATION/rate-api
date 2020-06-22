@@ -38,7 +38,7 @@ module.exports = () => {
   app.use("/ready", health.ReadinessEndpoint(healthcheck));
   app.use("/health", health.HealthEndpoint(healthcheck));
 
-  app.use("/api/rate/:id/:quoteId", async (req, res, next) => {
+  app.use("/api/rate_issue/rate/:id/:quoteId", async (req, res, next) => {
     const quoteId = req.params.quoteId;
     const pd = req.body.pd;
     const { data } = await client.get(
