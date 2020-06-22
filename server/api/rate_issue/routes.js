@@ -77,8 +77,8 @@ let saveCoverageInfo = async (data, quoteId) => {
   dataStore.addCoverage(coverage);
 
   return {
-    coverageId: coverage.id,
-    premium: coverage.premium,
+    id: coverage.id,
+    premium: coverage.premium
   };
 };
 
