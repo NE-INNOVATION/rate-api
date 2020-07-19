@@ -4,22 +4,14 @@ const router = express.Router({ mergeParams: true });
 const dataStore = require("../../data/dataStore");
 const axios = require("axios");
 const { Agent } = require("https");
-
-let polGen = rn.generator({
-  min: 100000000,
-  max: 999999999,
-  integer: true,
+const winston = require("winston");
+const logger = winston.createLogger({
+  transports: [new winston.transports.Console()],
 });
 
 let covGen = rn.generator({
   min: 100000000,
   max: 999999999,
-  integer: true,
-});
-
-let policyNumGen = rn.generator({
-  min: 100000000000,
-  max: 999999999000,
   integer: true,
 });
 
@@ -32,102 +24,67 @@ const client = axios.create({
 router
   .route("/rate/:id/:quoteId")
   .get(async (req, res) => {
+    logger.info(`app.api.quotes - getting quote with id - ${req.params.id}`);
     res.send(
       JSON.stringify(await getCoverageInfo(req.params.id, req.params.quoteId))
     );
   })
   .post(async (req, res) => {
+    logger.info(`app.api.quotes - creating new quote`);
     res.send(
       JSON.stringify(await saveCoverageInfo(req.body, req.params.quoteId))
     );
   });
 
-router
-  .route("/issue/:id/:quoteId")
-  .get(async (req, res) => {
-    res.send(
-      JSON.stringify(await getPolicyInfo(req.params.id, req.params.quoteId))
-    );
-  })
-  .post(async (req, res) => {
-    res.send(
-      JSON.stringify(await savePolicyInfo(req.body, req.params.quoteId))
-    );
-  });
-
 let getCoverageInfo = async (id, quoteId) => {
-  console.log("Returning Coverage #", id);
-  let coverage = await dataStore.findCoverage(quoteId);
-  return coverage;
+  try {
+    let coverage = await dataStore.findCoverage(quoteId);
+    return coverage;
+  } catch (error) {
+    logger.error(
+      `app.api.quotes - getting quote#${id}, from quote#${quoteId} failed - ${JSON.stringify(
+        error
+      )}`
+    );
+  }
 };
 
 let saveCoverageInfo = async (data, quoteId) => {
-  let coverage = "";
-  // if (data.id) {
-  //   coverage = await dataStore.findCoverage(quoteId);
-  // } else {
-  coverage = {};
-  coverage.quoteId = quoteId;
-  // }
+  try {
+    let coverage = {};
 
-  coverage.bi = data.bi;
-  coverage.pd = data.pd;
-  coverage.med = data.med;
-  coverage.comp = data.comp;
-  coverage.col = data.col;
-  coverage.rerim = data.rerim;
-  coverage.premium = (Math.random() * 1000 + 600).toFixed(2);
+    coverage.quoteId = quoteId;
+    coverage.bi = data.bi;
+    coverage.pd = data.pd;
+    coverage.med = data.med;
+    coverage.comp = data.comp;
+    coverage.col = data.col;
+    coverage.rerim = data.rerim;
+    coverage.premium = (Math.random() * 1000 + 600).toFixed(2);
 
-  if (!data.id) {
-    coverage.id = covGen().toString();
-  }
-
-  await client.post(
-    `${process.env.DB_SERVICE_URL}/${process.env.COLLECTION_NAME}`,
-    coverage,
-    {
-      headers: {
-        "Content-Type": "application/json",
-      },
+    if (!data.id) {
+      coverage.id = covGen().toString();
     }
-  );
 
-  // dataStore.addCoverage(coverage);
+    await client.post(
+      `${process.env.DB_SERVICE_URL}/${process.env.COLLECTION_NAME}`,
+      coverage,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
-  return {
-    id: coverage.id,
-    premium: coverage.premium,
-  };
-};
-
-let getPolicyInfo = async (id, quoteId) => {
-  console.log("Returning Policy #", id);
-  let policy = await dataStore.findPolicy(quoteId);
-  return policy;
-};
-
-let savePolicyInfo = async (data, quoteId) => {
-  let policy = "";
-  if (data.id !== "") {
-    policy = await dataStore.findPolicy(quoteId);
-  } else {
-    policy = {};
-    policy.quoteId = quoteId;
+    return {
+      id: coverage.id,
+      premium: coverage.premium,
+    };
+  } catch (error) {
+    logger.error(
+      `app.api.quotes - error creating new quote - ${JSON.stringify(error)}`
+    );
   }
-
-  policy.confirmEmail = data.confirmEmail;
-  policy.confirmContactNum = data.confirmContactNum;
-  policy.bankName = data.bankName;
-  policy.accountNum = data.accountNum;
-
-  if (data.id === "") {
-    policy.id = polGen().toString();
-    policy.policyNum = policyNumGen().toString();
-  }
-
-  dataStore.addPolicy(policy);
-
-  return { policyId: policy.id, policyNumber: policy.policyNum };
 };
 
 module.exports = router;
