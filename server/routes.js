@@ -1,12 +1,13 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const { route } = require("./api");
-const dataStore = require("./data/dataStore");
 const health = require("@cloudnative/health-connect");
 const { Agent } = require("https");
 const Axios = require("axios");
-const { response } = require("express");
-const e = require("express");
+const winston = require("winston");
+const logger = winston.createLogger({
+  transports: [new winston.transports.Console()],
+});
 
 const client = Axios.create({
   httpsAgent: new Agent({
@@ -34,6 +35,10 @@ module.exports = () => {
     next();
   });
 
+  app.use((req, res, done) => {
+    logger.info(`app.${req.originalUrl}`);
+    done();
+  });
   app.use("/live", health.LivenessEndpoint(healthcheck));
   app.use("/ready", health.ReadinessEndpoint(healthcheck));
   app.use("/health", health.HealthEndpoint(healthcheck));
@@ -44,6 +49,7 @@ module.exports = () => {
     const { data } = await client.get(
       `${process.env.UNDERWRITING_URL}${quoteId}/${pd}`
     );
+    console.log(data);
     if (data.status === "RATE_SUCC" || data.status === "UWAPPR") {
       next();
     } else {
