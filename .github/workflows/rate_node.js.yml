@@ -60,8 +60,8 @@ jobs:
         # Oc command to be executed
         cmd: |
           'version'
-          'project development'
-          'tag --source=docker quay.io/neinnovationorg/rate-api:${{ steps.extract_branch.outputs.branch }} development/rate-api:${{ steps.extract_branch.outputs.branch }}'
+          'project stage'
+          'tag --source=docker quay.io/neinnovationorg/rate-api:${{ steps.extract_branch.outputs.branch }} stage/rate-api:${{ steps.extract_branch.outputs.branch }}'
     - name: Scan Image
       uses: Azure/container-scan@v0
       continue-on-error: true
