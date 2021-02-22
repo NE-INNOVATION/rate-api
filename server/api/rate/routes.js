@@ -2,31 +2,27 @@ const express = require("express");
 let rn = require("random-number");
 const router = express.Router({ mergeParams: true });
 const dataStore = require("../../data/dataStore");
-const axios = require("axios");
-const { Agent } = require("https");
 const winston = require("winston");
 const logger = winston.createLogger({
   transports: [new winston.transports.Console()],
 });
 
-let covGen = rn.generator({
+let gen = rn.generator({
   min: 100000000,
   max: 999999999,
   integer: true,
 });
 
-const client = axios.create({
-  httpsAgent: new Agent({
-    rejectUnauthorized: false,
-  }),
-});
-
 router
-  .route("/rate/:id/:quoteId")
+  .route("/coverageInfo/:quoteId/:coverageId?")
   .get(async (req, res) => {
-    logger.info(`app.api.quotes - getting quote with id - ${req.params.id}`);
+    logger.info(
+      `app.api.quotes - getting quote with id - ${req.params.coverageId}`
+    );
     res.send(
-      JSON.stringify(await getCoverageInfo(req.params.id, req.params.quoteId))
+      JSON.stringify(
+        await getCoverageInfo(req.params.coverageId, req.params.quoteId)
+      )
     );
   })
   .post(async (req, res) => {
@@ -36,13 +32,13 @@ router
     );
   });
 
-let getCoverageInfo = async (id, quoteId) => {
+let getCoverageInfo = async (coverageId, quoteId) => {
   try {
-    let coverage = await dataStore.findCoverage(quoteId);
+    let coverage = await dataStore.findCoverage(coverageId, quoteId);
     return coverage;
   } catch (error) {
     logger.error(
-      `app.api.quotes - getting quote#${id}, from quote#${quoteId} failed - ${JSON.stringify(
+      `app.api.quotes - getting quote#${coverageId}, from quote#${quoteId} failed - ${JSON.stringify(
         error
       )}`
     );
@@ -52,7 +48,11 @@ let getCoverageInfo = async (id, quoteId) => {
 let saveCoverageInfo = async (data, quoteId) => {
   try {
     let coverage = {};
-
+    if (data.id) {
+      coverage = await dataStore.findCoverage(data.id, quoteId);
+    } else {
+      coverage.id = gen().toString();
+    }
     coverage.quoteId = quoteId;
     coverage.bi = data.bi;
     coverage.pd = data.pd;
@@ -62,20 +62,8 @@ let saveCoverageInfo = async (data, quoteId) => {
     coverage.rerim = data.rerim;
     coverage.premium = (Math.random() * 1000 + 600).toFixed(2);
 
-    if (!data.id) {
-      coverage.id = covGen().toString();
-    }
-
-    await client.post(
-      `${process.env.DB_SERVICE_URL}/${process.env.COLLECTION_NAME}`,
-      coverage,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
+    await dataStore.addCoverage(coverage);
+    
     return {
       id: coverage.id,
       premium: coverage.premium,

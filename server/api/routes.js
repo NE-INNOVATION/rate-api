@@ -1,7 +1,7 @@
 const express = require('express')
-const rateIssueRoutes = require('./rate_issue').routes
+const coverageRoutes = require('./rate').routes
 
 const router = express.Router({mergeParams: true})
-router.use('/rate_issue', rateIssueRoutes)
+router.use('/coverages', coverageRoutes)
 
 module.exports = router
