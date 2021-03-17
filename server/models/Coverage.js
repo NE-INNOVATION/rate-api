@@ -36,4 +36,7 @@ const CoverageSchema = new Schema({
   },
 });
 
-module.exports = Coverage = mongoose.model("coverages", CoverageSchema);
+module.exports = Coverage = mongoose.model(
+  "col_lrqi_coverages",
+  CoverageSchema
+);
