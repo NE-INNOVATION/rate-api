@@ -1,14 +1,16 @@
 const express = require("express");
-const bodyParser = require("body-parser");
-const { route } = require("./api");
-const dataStore = require("./data/dataStore");
 const health = require("@cloudnative/health-connect");
 const { Agent } = require("https");
 const Axios = require("axios");
 const winston = require("winston");
+const connectDB = require("../config/db");
+
 const logger = winston.createLogger({
   transports: [new winston.transports.Console()],
 });
+
+// Connect Database
+connectDB();
 
 const client = Axios.create({
   httpsAgent: new Agent({
@@ -21,7 +23,6 @@ const healthcheck = new health.HealthChecker();
 module.exports = () => {
   const app = express();
   app.set("json-spaces", 2);
-  app.use(bodyParser.json());
   app.use(function (req, res, next) {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader(
@@ -43,26 +44,25 @@ module.exports = () => {
   app.use("/live", health.LivenessEndpoint(healthcheck));
   app.use("/ready", health.ReadinessEndpoint(healthcheck));
   app.use("/health", health.HealthEndpoint(healthcheck));
+  app.use(express.json({ extended: false }));
+  app.use("/api", require("./api/rate"));
 
-  app.use(
-    "/api/coverages/coverageInfo/:quoteId/:coverageId?",
-    async (req, res, next) => {
-      const quoteId = req.params.quoteId;
-      const pd = req.body.pd;
-      const { data } = await client.get(
-        `${process.env.UNDERWRITING_URL}${quoteId}/${pd}`
-      );
-      console.log(data);
-      if (data.status === "RATE_SUCC" || data.status === "UWAPPR") {
-        next();
-      } else {
-        res.send(data);
-      }
-    }
-  );
-
-  app.use("/api", route);
-  dataStore.createDbConnection();
+  // app.use(
+  //   "/api/coverages/coverageInfo/:quoteId/:coverageId?",
+  //   async (req, res, next) => {
+  //     const quoteId = req.params.quoteId;
+  //     const pd = req.body.pd;
+  //     const { data } = await client.get(
+  //       `${process.env.UNDERWRITING_URL}${quoteId}/${pd}`
+  //     );
+  //     console.log(data);
+  //     if (data.status === "RATE_SUCC" || data.status === "UWAPPR") {
+  //       next();
+  //     } else {
+  //       res.send(data);
+  //     }
+  //   }
+  // );
 
   return app;
 };
