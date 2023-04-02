@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const Schema = mongoose.Schema;
 
 const CoverageSchema = new Schema({
@@ -36,7 +36,4 @@ const CoverageSchema = new Schema({
   },
 });
 
-module.exports = Coverage = mongoose.model(
-  "col_lrqi_coverages",
-  CoverageSchema
-);
+export default mongoose.model("coverages", CoverageSchema);
